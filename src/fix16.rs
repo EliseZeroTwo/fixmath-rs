@@ -1,4 +1,4 @@
-use std::{ops, u32};
+use std::{ops, u16, u32};
 
 #[derive(Copy, Clone, Debug)]
 pub struct Fix16(pub i32);
@@ -332,6 +332,95 @@ impl Fix16 {
             Ok(c) => Ok(Fix16::from(c)),
             Err(why) => Err(why.to_string()),
         }
+    }
+
+    pub fn sqrt(self) -> Fix16 {
+        let mut num = if self.0.is_negative() {
+            -self.0
+        } else {
+            self.0
+        } as u32;
+        let mut res = 0u32;
+        let mut bit;
+
+        if (num & 0xFFF00000) != 0 {
+            bit = 1u32 << 30;
+        } else {
+            bit = 1u32 << 18;
+        }
+
+        while bit > num {
+            bit >>= 2;
+        }
+
+        for x in 0..2 {
+            while bit != 0 {
+                if num >= res + bit {
+                    num -= res + bit;
+                    res = (res >> 1) + bit;
+                } else {
+                    res >>= 1;
+                }
+                bit >>= 2;
+            }
+
+            if x == 0 {
+                if num > std::u16::MAX as u32 {
+                    num -= res;
+                    num = (num << 16) - 0x8000;
+                    res = (res << 16) + 0x8000;
+                } else {
+                    num <<= 16;
+                    res <<= 16;
+                }
+
+                bit = 1 << 14;
+            }
+        }
+
+        if !crate::no_rounding() && num > res {
+            res += 1;
+        }
+
+        if self.0.is_negative() {
+            Fix16((res as i32) * -1)
+        } else {
+            Fix16(res as i32)
+        }
+    }
+
+    pub fn sin(self) -> Fix16 {
+        let mut temp_angle = Fix16(self.0 % (FIX16_PI.0 << 1));
+
+        if temp_angle.0.is_negative() {
+            temp_angle = Fix16(temp_angle.0 + (FIX16_PI.0 << 1));
+        }
+
+        let out_val;
+        if temp_angle.0 >= FIX16_PI.0 {
+            temp_angle = Fix16(temp_angle.0 - FIX16_PI.0);
+            if temp_angle.0 >= (FIX16_PI.0 >> 1) {
+                temp_angle = Fix16(FIX16_PI.0 - temp_angle.0);
+            }
+
+            out_val = -1 * if temp_angle.0 >= crate::consts::F16_SIN_LUT_COUNT { FIX16_ONE.0 } else { crate::consts::F16_SIN_LUT[temp_angle.0 as usize] as i32 };
+        } else {
+            if temp_angle.0 >= (FIX16_PI.0 >> 1) {
+                temp_angle = Fix16(FIX16_PI.0 - temp_angle.0);
+            }
+            
+            out_val = if temp_angle.0 >= crate::consts::F16_SIN_LUT_COUNT { FIX16_ONE.0 } else { crate::consts::F16_SIN_LUT[temp_angle.0 as usize] as i32 };
+        }
+
+        Fix16(out_val)
+    }
+
+    pub fn cos(self) -> Fix16 {
+        Fix16(self.0 + (FIX16_PI.0 >> 1)).sin()
+    }
+
+    pub fn tan(self) -> Fix16 {
+        self.sin().saturating_div(self.cos())
     }
 }
 

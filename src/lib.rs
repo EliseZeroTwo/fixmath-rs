@@ -6,6 +6,7 @@ pub fn no_rounding() -> bool {
     false
 }
 
+mod consts;
 pub mod fix16;
 
 #[cfg(test)]
@@ -77,5 +78,12 @@ mod tests {
         }
         let str_parse = str_parse.unwrap();
         assert_eq!(str_parse, Fix16::from(-69.420));
+
+        assert_eq!(Fix16::from(22).sqrt(), Fix16(0x4b0bf));
+        assert_eq!(Fix16::from(2451.1238).sqrt(), Fix16(0x318242));
+
+        assert_eq!(Fix16::from(203).sin(), Fix16(0xeee4));
+        assert_eq!(Fix16::from(4203).cos(), Fix16(0xe758));
+        assert_eq!(Fix16::from(2193).tan(), Fix16(0x2cac));
     }
 }
