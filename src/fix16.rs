@@ -249,6 +249,90 @@ impl Fix16 {
             res.0
         }
     }
+
+    pub fn from_hex_str(str: &String) -> Result<Fix16, String> {
+        let chars = str.chars().collect::<Vec<char>>();
+        let negative = chars[0] == '-';
+        let start_offset = {
+            let off_one = if negative { 1 } else { 0 };
+            let off_two = if chars.len() > off_one
+                && chars[off_one] == '0'
+                && chars.len() > off_one + 1
+                && (chars[off_one + 1] == 'x' || chars[off_one + 1] == 'X')
+            {
+                2
+            } else {
+                0
+            };
+            off_one + off_two
+        };
+
+        fn is_num_str(inp: &String) -> bool {
+            let chars = inp.chars().collect::<Vec<char>>();
+            for x in 0..inp.len() {
+                if !(chars[x] >= '0' && chars[x] <= '9') {
+                    return false;
+                }
+            }
+            true
+        }
+
+        let contains_dec = str.find('.');
+
+        let out_val: u32;
+
+        if let Some(dec_point_offset) = contains_dec {
+            let pre_dec_str = chars[start_offset..dec_point_offset]
+                .iter()
+                .collect::<String>();
+            let mut post_dec_str = chars[dec_point_offset + 1..chars.len()]
+                .iter()
+                .collect::<String>();
+            let post_dec_str_len = post_dec_str.len();
+            if post_dec_str_len < 4 && is_num_str(&post_dec_str) {
+                if post_dec_str_len == 1 {
+                    post_dec_str = format!("0{}00", post_dec_str);
+                } else if post_dec_str_len == 2 {
+                    post_dec_str = format!("{}00", post_dec_str);
+                } else {
+                    post_dec_str = format!("{}0", post_dec_str);
+                }
+            }
+
+            let pre_dec_parsed = u16::from_str_radix(&pre_dec_str, 16);
+            let post_dec_parsed = u16::from_str_radix(&post_dec_str, 16);
+
+            if let Err(why) = pre_dec_parsed {
+                return Err(why.to_string());
+            } else if let Err(why) = post_dec_parsed {
+                return Err(why.to_string());
+            }
+
+            out_val = (pre_dec_parsed.unwrap() as u32) << 16 | (post_dec_parsed.unwrap() as u32);
+        } else {
+            let pre_dec_str = chars[start_offset..chars.len()].iter().collect::<String>();
+            let pre_dec_parsed = u16::from_str_radix(&pre_dec_str, 16);
+
+            if let Err(why) = pre_dec_parsed {
+                return Err(why.to_string());
+            }
+
+            out_val = (pre_dec_parsed.unwrap() as u32) << 16;
+        }
+
+        if negative {
+            Ok(Fix16((out_val as i32) * -1))
+        } else {
+            Ok(Fix16(out_val as i32))
+        }
+    }
+
+    pub fn from_str(str: &String) -> Result<Fix16, String> {
+        match str.parse::<f32>() {
+            Ok(c) => Ok(Fix16::from(c)),
+            Err(why) => Err(why.to_string()),
+        }
+    }
 }
 
 impl ops::Add for Fix16 {

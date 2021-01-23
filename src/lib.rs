@@ -63,5 +63,19 @@ mod tests {
         let underflowing_operation = FIX16_MIN.overflowing_sub(FIX16_ONE - Fix16(FIX16_ONE.0 - 1));
         assert_eq!(underflowing_operation.1, true);
         assert_eq!(underflowing_operation.0, FIX16_MAX);
+
+        let hex_str_parse = Fix16::from_hex_str(&"0x32.69".to_string());
+        if let Err(why) = hex_str_parse {
+            panic!(why);
+        }
+        let hex_str_parse = hex_str_parse.unwrap();
+        assert_eq!(hex_str_parse, Fix16(0x0032_6900));
+
+        let str_parse = Fix16::from_str(&"-69.420".to_string());
+        if let Err(why) = str_parse {
+            panic!(why);
+        }
+        let str_parse = str_parse.unwrap();
+        assert_eq!(str_parse, Fix16::from(-69.420));
     }
 }
