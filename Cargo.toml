@@ -11,3 +11,6 @@ license = "MIT"
 no-rounding = []
 
 [dependencies]
+
+[dev-dependencies]
+libfixmath-src-rs = { git = "https://github.com/EliseZeroTwo/libfixmath-src-rs.git", branch = "main" }

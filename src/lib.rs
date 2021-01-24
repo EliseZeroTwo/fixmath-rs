@@ -11,10 +11,74 @@ pub mod fix16;
 
 #[cfg(test)]
 mod tests {
-    use crate::fix16::{Fix16, FIX16_MAX, FIX16_MIN, FIX16_ONE};
+    use crate::fix16::{FIX16_MAX, FIX16_MIN, FIX16_ONE, Fix16};
+
+    extern crate libfixmath_src_rs;
+    use libfixmath_src_rs::*;
+
+    #[test]
+    fn basic_ops() {
+        let rusty_twenty = Fix16::from(20);
+        let native_twenty = fix16_from_int(20);
+        assert_eq!(rusty_twenty.0, native_twenty);
+
+        let rusty_two_thousand_thirty_nine_dot_four_two = Fix16::from(2039.42);
+        let native_two_thousand_thirty_nine_dot_four_two = fix16_from_float(2039.42);
+        assert_eq!(rusty_two_thousand_thirty_nine_dot_four_two.0, native_two_thousand_thirty_nine_dot_four_two);
+
+        let rusty_add = rusty_two_thousand_thirty_nine_dot_four_two + rusty_twenty;
+        let native_add;
+        unsafe {
+            native_add = fix16_add(native_two_thousand_thirty_nine_dot_four_two, native_twenty);
+        }
+        assert_eq!(rusty_add.0, native_add);
+
+        let rusty_sub = rusty_two_thousand_thirty_nine_dot_four_two - rusty_twenty;
+        let native_sub;
+        unsafe {
+            native_sub = fix16_sub(native_two_thousand_thirty_nine_dot_four_two, native_twenty);
+        }
+        assert_eq!(rusty_sub.0, native_sub);
+
+        let rusty_mul = rusty_two_thousand_thirty_nine_dot_four_two * rusty_twenty;
+        let native_mul;
+        unsafe {
+            native_mul = fix16_mul(native_two_thousand_thirty_nine_dot_four_two, native_twenty);
+        }
+        assert_eq!(rusty_mul.0, native_mul);
+
+        let rusty_div = rusty_two_thousand_thirty_nine_dot_four_two / rusty_twenty;
+        let native_div;
+        unsafe {
+            native_div = fix16_div(native_two_thousand_thirty_nine_dot_four_two, native_twenty);
+        }
+        assert_eq!(rusty_div.0, native_div);
+
+        let rusty_sin = rusty_two_thousand_thirty_nine_dot_four_two.sin();
+        let native_sin;
+        unsafe {
+            native_sin = fix16_sin(native_two_thousand_thirty_nine_dot_four_two);
+        }
+        assert_eq!(rusty_sin.0, native_sin);
+
+        let rusty_cos = rusty_two_thousand_thirty_nine_dot_four_two.cos();
+        let native_cos;
+        unsafe {
+            native_cos = fix16_cos(native_two_thousand_thirty_nine_dot_four_two);
+        }
+        assert_eq!(rusty_cos.0, native_cos);
+
+        let rusty_tan = rusty_two_thousand_thirty_nine_dot_four_two.tan();
+        let native_tan;
+        unsafe {
+            native_tan = fix16_tan(native_two_thousand_thirty_nine_dot_four_two);
+        }
+        assert_eq!(rusty_tan.0, native_tan);
+    }
 
     #[test]
     fn it_works() {
+
         let pos_two = Fix16::from(2);
         let neg_onetwothreefour_fivesix = Fix16::from(-1234.56);
 

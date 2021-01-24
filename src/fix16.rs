@@ -390,23 +390,25 @@ impl Fix16 {
     }
 
     pub fn sin(self) -> Fix16 {
-        let mut temp_angle = Fix16(self.0 % (FIX16_PI.0 << 1));
+        let shl_pi = Fix16(FIX16_PI.0 << 1);
+        let shr_pi = Fix16(FIX16_PI.0 >> 1);
+        let mut temp_angle = self % shl_pi;
 
-        if temp_angle.0.is_negative() {
-            temp_angle = Fix16(temp_angle.0 + (FIX16_PI.0 << 1));
+        if temp_angle.0 < 0 {
+            temp_angle += shl_pi;
         }
-
+        
         let out_val;
         if temp_angle.0 >= FIX16_PI.0 {
-            temp_angle = Fix16(temp_angle.0 - FIX16_PI.0);
-            if temp_angle.0 >= (FIX16_PI.0 >> 1) {
-                temp_angle = Fix16(FIX16_PI.0 - temp_angle.0);
+            temp_angle -= FIX16_PI;
+            if temp_angle.0 >= shr_pi.0 {
+                temp_angle = FIX16_PI - temp_angle;
             }
 
-            out_val = -1 * if temp_angle.0 >= crate::consts::F16_SIN_LUT_COUNT { FIX16_ONE.0 } else { crate::consts::F16_SIN_LUT[temp_angle.0 as usize] as i32 };
+            out_val = -(if temp_angle.0 >= crate::consts::F16_SIN_LUT_COUNT { FIX16_ONE.0 } else { crate::consts::F16_SIN_LUT[temp_angle.0 as usize] as i32 });
         } else {
-            if temp_angle.0 >= (FIX16_PI.0 >> 1) {
-                temp_angle = Fix16(FIX16_PI.0 - temp_angle.0);
+            if temp_angle.0 >= shr_pi.0 {
+                temp_angle = FIX16_PI - temp_angle;
             }
             
             out_val = if temp_angle.0 >= crate::consts::F16_SIN_LUT_COUNT { FIX16_ONE.0 } else { crate::consts::F16_SIN_LUT[temp_angle.0 as usize] as i32 };
@@ -432,6 +434,12 @@ impl ops::Add for Fix16 {
     }
 }
 
+impl ops::AddAssign for Fix16 {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
+    }
+}
+
 impl ops::Sub for Fix16 {
     type Output = Self;
 
@@ -440,16 +448,29 @@ impl ops::Sub for Fix16 {
     }
 }
 
+impl ops::SubAssign for Fix16 {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs;
+    }
+}
+
 impl ops::Mul for Fix16 {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
         let mut product = self.0 as i64 * rhs.0 as i64;
+        let upper = (product >> 47) as u32;
 
         if product < 0 {
+            if !upper != 0 {
+                return FIX16_OVERFLOW;
+            }
+
             if !crate::no_rounding() {
                 product -= 1;
             }
+        } else if upper != 0 {
+            return FIX16_OVERFLOW;
         }
 
         if crate::no_rounding() {
@@ -457,6 +478,12 @@ impl ops::Mul for Fix16 {
         } else {
             Fix16(((product >> 16) + ((product & 0x8000) >> 15)) as i32)
         }
+    }
+}
+
+impl ops::MulAssign for Fix16 {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = *self * rhs;
     }
 }
 
@@ -516,11 +543,51 @@ impl ops::Div for Fix16 {
     }
 }
 
+impl ops::DivAssign for Fix16 {
+    fn div_assign(&mut self, rhs: Self) {
+        *self = *self / rhs;
+    }
+}
+
 impl ops::Rem for Fix16 {
     type Output = Self;
 
     fn rem(self, rhs: Self) -> Self::Output {
         Fix16(self.0 % rhs.0)
+    }
+}
+
+impl ops::RemAssign for Fix16 {
+    fn rem_assign(&mut self, rhs: Self) {
+        *self = *self % rhs;
+    }
+}
+
+impl ops::Shl for Fix16 {
+    type Output = Self;
+
+    fn shl(self, rhs: Self) -> Self::Output {
+        Fix16(self.0 << i32::from(rhs))
+    }
+}
+
+impl ops::ShlAssign for Fix16 {
+    fn shl_assign(&mut self, rhs: Self) {
+        *self = *self << rhs;
+    }
+}
+
+impl ops::Shr for Fix16 {
+    type Output = Self;
+
+    fn shr(self, rhs: Self) -> Self::Output {
+        Fix16(self.0 >> i32::from(rhs))
+    }
+}
+
+impl ops::ShrAssign for Fix16 {
+    fn shr_assign(&mut self, rhs: Self) {
+        *self = *self >> rhs;
     }
 }
 
