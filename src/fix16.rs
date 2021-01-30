@@ -328,9 +328,18 @@ impl Fix16 {
     }
 
     pub fn from_str(str: &String) -> Result<Fix16, String> {
-        match str.parse::<f32>() {
-            Ok(c) => Ok(Fix16::from(c)),
-            Err(why) => Err(why.to_string()),
+        let mut chars = str.chars();
+        let radix_indictator = [chars.next().unwrap_or(' '), chars.next().unwrap_or(' ')];
+        match radix_indictator {
+            ['0','x'] => {
+                Fix16::from_hex_str(str)
+            }
+            _ => {
+                match str.parse::<f32>() {
+                    Ok(c) => Ok(Fix16::from(c)),
+                    Err(why) => Err(why.to_string()),
+                }
+            }
         }
     }
 
